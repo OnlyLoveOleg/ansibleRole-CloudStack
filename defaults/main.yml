@@ -1,0 +1,5 @@
+---
+cloudstack_db_user: "cloudstack"
+cloudstack_db_password: "cloudstack"
+cloudstack_db_host: "localhost"
+cloudstack_db_port: "3306"

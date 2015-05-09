@@ -1,0 +1,39 @@
+---
+- name: Debian | Add CloudStack repo 
+  apt_repository: >
+   repo='deb http://cloudstack.apt-get.eu/ubuntu trusty 4.4'
+   state=present
+
+- name: Debian | Add CloudStack repo key
+  apt_key: >
+   url=http://cloudstack.apt-get.eu/release.asc
+   state=present
+
+- name: Debian | Install packages
+  apt: >
+   name=cloudstack-management
+   state=latest
+   update_cache=yes
+
+- name: Debian | Copy MySQL config with few update for CloudStack
+  template: >
+   src=Debian/cloudstack.cnf.j2
+   dest=/etc/mysql/conf.d/cloudstack.cnf
+   owner=root group=root mode=0644
+  notify: restart mysql
+
+- name: Debian | Initialize database
+  command: 'cloudstack-setup-databases {{ cloudstack_db_user | default("cloudstack") }}:{{ cloudstack_db_password | default("cloudstack") }}@{{ cloudstack_db_host | default("localhost") }}:{{ cloudstack_db_port | default("3306") }} --deploy-as=root'
+  args:
+   creates: /var/lib/mysql/cloud
+
+- name: Debian | Download system VMs
+  command: '/usr/share/cloudstack-common/scripts/storage/secondary/cloud-install-sys-tmplt -m /srv/images/secondary01 -u http://cloudstack.apt-get.eu/systemvm/4.4/systemvm64template-4.4.1-7-kvm.qcow2.bz2 -h kvm -F'
+  args:
+   creates: /srv/images/secondary/template
+
+- name: Debian | Copy mysql-connector jar
+  copy: >
+   src=mysql-connector-java-5.1.33-bin.jar
+   dest=/usr/share/cloudstack-management/webapps/client/WEB-INF/lib/mysql-connector-java-5.1.33-bin.jar
+   owner=root group=root mode=0644
